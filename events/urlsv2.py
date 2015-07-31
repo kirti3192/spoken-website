@@ -102,6 +102,11 @@ urlpatterns = [
      SingletrainingCreateView.as_view(template_name="single-training-form.html"), 
       name="new-single-training"
     ),
+    url(
+      r'^single-training/admin/$', 
+     AdminSingletrainingCreateView.as_view(template_name="admin_singletraining_form.html"), 
+      name="admin-new-single-training"
+    ),
     #ajax
     url(
       r'^save-student/', 

@@ -16,9 +16,14 @@
 {% endblock %}
 {% block search %} {% endblock %}
 {% block content %}
+<!-- {{group}} -->
   <div class="form-group">
     <div class="col-sm-offset-0 col-sm-9">
-      <input class="btn btn-primary" type="submit" value="Add One Day Training Workshop Request" onclick="add();"/>
+       {% if "Administrator" in group %}
+      <a class="btn btn-primary" href="/software-training/single-training/admin/">Add One Day Training Workshop Request admin</a>
+      {% else %}
+      <a class="btn btn-primary" href="/software-training/single-training/new/">Add One Day Training Workshop Request</a>
+      {% endif %}
     </div>
   </div>
   <br/><br/><br/><br/>
@@ -56,12 +61,4 @@
     </div>
   </div>
     
-{% endblock %}
-{% block compressinlinejsblock %}
-  <script>
-    function add()
-    {
-      location.href = "/software-training/single-training/new/";
-    }
-  </script>
 {% endblock %}

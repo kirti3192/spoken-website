@@ -2510,6 +2510,31 @@ def ajax_state_collage(request):
         return HttpResponse(json.dumps(tmp), content_type='application/json')
 
 @csrf_exempt
+def ajax_state_schools(request):
+    """ Ajax: Get the schools (Academic) based on District selected """
+    if request.method == 'POST':
+        state = request.POST.get('state')
+        schools = AcademicCenter.objects.filter(state=state , institution_type_id = 5).order_by('institution_name')
+        tmp = '<option value = None> --------- </option>'
+        if schools:
+            for i in schools:
+                tmp +='<option value='+str(i.id)+'>'+i.institution_name+'</option>'
+        return HttpResponse(json.dumps(tmp), content_type='application/json')
+        
+@csrf_exempt
+def ajax_state_vocational(request):
+    """ Ajax: Get the schools (Academic) based on District selected """
+    if request.method == 'POST':
+        state = request.POST.get('state')
+        print state
+        vocational = AcademicCenter.objects.filter(state=state , institution_type_id = 4).order_by('institution_name')
+        tmp = '<option value = None> --------- </option>'
+        if vocational:
+            for i in vocational:
+                tmp +='<option value='+str(i.id)+'>'+i.institution_name+'</option>'
+        return HttpResponse(json.dumps(tmp), content_type='application/json')
+
+@csrf_exempt
 def ajax_dept_foss(request):
     """ Ajax: Get the dept and foss based on training selected """
     data = {}

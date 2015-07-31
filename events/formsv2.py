@@ -160,3 +160,32 @@ class SingleTrainingForm(forms.ModelForm):
     if today.date() > tdate:
       raise forms.ValidationError("Invalid semester training date")
     return tdate
+    
+#########################################################################33
+class AdminSingleTrainingForm(forms.ModelForm):
+  training_type = forms.ChoiceField(choices=[('', '---------'), (0, 'School'),(1,'Vocational'),(2,'Live workshop'),(3,'Pilot workshop')])
+  states = forms.ModelChoiceField(empty_label='---------', queryset = State.objects.filter(id__in=AcademicCenter.objects.all().distinct()))
+  sch = forms.ChoiceField(choices=[('', '---------')])
+  csv_file = forms.FileField(required = True)
+  class Meta:
+    model = SingleTraining
+    exclude = ['academic', 'organiser', 'status', 'participant_count']
+  
+  def clean(self): 
+        #self.cleaned_data['csv_file']
+    print self.cleaned_data['csv_file']
+    print self.cleaned_data['states']
+    print self.cleaned_data 
+    if self.cleaned_data['csv_file'].name.split('.')[-1] == 'csv':
+      pass
+    else:
+        raise forms.ValidationError("Invalid file format.")
+    return self.cleaned_data
+    
+  def clean_tdate(self):
+    today = datetime.now()
+    tdate = self.cleaned_data['tdate']
+    if today.date() > tdate:
+      raise forms.ValidationError("Invalid semester training date")
+    return tdate
+

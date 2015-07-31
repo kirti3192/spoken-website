@@ -10,7 +10,7 @@ from django.db import IntegrityError
 from django.utils.decorators import method_decorator
 from events.decorators import group_required
 from events.forms import StudentBatchForm, TrainingRequestForm, \
-    TrainingRequestEditForm, CourseMapForm, SingleTrainingForm
+    TrainingRequestEditForm, CourseMapForm, SingleTrainingForm ,AdminSingleTrainingForm
 from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render, render_to_response
 from django.core.validators import validate_email
@@ -836,6 +836,15 @@ class SingletrainingApprovedListView(ListView):
   queryset = None
   paginate_by = 10
   
+  def get_context_data(self, **kwargs):
+    context = super(SingletrainingApprovedListView, self).get_context_data(**kwargs)
+    temp = self.request.user.groups.all()
+    grup = []
+    for i in temp:
+      grup.append(i.name)
+    context['group'] = grup
+    return context
+  
   def dispatch(self, *args, **kwargs):
     self.queryset = SingleTraining.objects.filter(Q(status=0) | Q(status=1))
     return super(SingletrainingApprovedListView, self).dispatch(*args, **kwargs)
@@ -967,7 +976,129 @@ class SingletrainingCreateView(CreateView):
            StudentMaster.objects.create(student=student, batch_id=batch_id)
            write_flag = True'''
 #     SingleTrainingAttendance.objects.get(pk=batch_id).update_student_count()
+
+######################################################################################
+class AdminSingletrainingCreateView(CreateView):
+  form_class = AdminSingleTrainingForm
+  template_name = ""
+  success_url = "/software-training/single-training/approved/"
+  
+  def form_valid(self, form, **kwargs):
+    print "h"
+    form_data = form.save(commit=False)
+    form_data.academic = self.request.user.organiser.academic
+    form_data.organiser = self.request.user.organiser
+    student = None
+    skipped, error, warning, write_flag = self.csv_email_validate(self.request.FILES['csv_file'], str(self.request.POST.get('training_type')))
+    context = {'error': error, 'warning': warning, 'batch': form_data}
+    csv_error_line_num = ''
     
+    if error or skipped:
+#     return render_to_response(self.template_name, context, context_instance=RequestContext(self.request))
+      messages.error(self.request, "Batch not added: Error in CSV file")
+      for i in error:
+        csv_error_line_num = (csv_error_line_num+'%d, ')%(i+1)
+      messages.error(self.request, "You have error(s) in your CSV file on line numbers %s"%(csv_error_line_num))
+      
+    else:
+      messages.success(self.request, "Student Batch added successfully.")
+      form_data.save()
+      print "here"
+      self.create_singletraining_db(self.request.FILES['csv_file'], form_data.id)
+    return HttpResponseRedirect(self.success_url)
+
+  def email_validator(self, email):
+    if email and email.strip():
+      email = email.strip().lower()
+      try:
+        validate_email(email)
+        return True
+      except:
+        pass
+    return False
+
+  def get_student_vocational(self, email):
+    if email and email.strip():
+      email = email.strip().lower()
+      try:
+        student = SingleTrainingAttendance.objects.get(email=email)
+        return student
+      except ObjectDoesNotExist:
+        pass
+    return False
+
+  def create_student_vocational(self, training_id, fname, lname, email, gender):
+    if not fname or not lname or not email or not gender:
+      return False
+    user = None
+    fname = fname.strip().upper()
+    lname = lname.strip().upper()
+    email = email.strip().lower()
+    gender = gender.strip().lower()
+
+    if fname and lname and email and gender:
+      if gender == 'male' or gender == 'm':
+        gender = 'Male'
+      else:
+        gender = 'Female'
+      student = SingleTrainingAttendance.objects.create(training_id = training_id, firstname = fname, lastname = lname, email = email, gender = gender)
+      return student
+    return False
+  
+  def csv_email_validate(self, file_path, ttype):
+    skipped = []
+    error = []
+    warning = []
+    write_flag = False
+    csv_data = []
+    csvdata = csv.reader(file_path, delimiter=',', quotechar='|')
+
+    #School
+    if ttype == '0':
+      for i in csvdata:
+        csv_data.append(i)
+      for j in range(len(csv_data)):
+        if len(csv_data[j]) < 3:
+          skipped.append(j)
+          continue
+      
+    #Vocational
+    else:
+      for i in csvdata:
+        csv_data.append(i)
+      for j in range(len(csv_data)):
+        if len(csv_data[j]) < 4:
+          skipped.append(j)
+          continue
+        if not self.email_validator(csv_data[j][2]):
+          error.append(j)
+          continue
+    return skipped, error, warning, write_flag
+  
+  def create_singletraining_db(self, file_path, batch_id):
+    csv_data_list = []
+    csvdata = csv.reader(file_path, delimiter=',', quotechar='|')
+    for i in csvdata:
+      csv_data_list.append(i)
+    for j in range(len(csv_data_list)):
+      student = self.get_student_vocational(csv_data_list[j][2])
+      if not student:
+        self.create_student_vocational(batch_id, csv_data_list[j][0], csv_data_list[j][1], csv_data_list[j][2], csv_data_list[j][3])
+
+    '''
+      if student:
+        try:
+          smrec = StudentMaster.objects.get(student=student, moved=False)
+           if int(batch_id) == int(smrec.batch_id):
+             row.append(1)
+           else:
+             row.append(0)
+             warning.append(row)
+             continue
+         except ObjectDoesNotExist:
+           StudentMaster.objects.create(student=student, batch_id=batch_id)
+           write_flag = True'''
+#     SingleTrainingAttendance.objects.get(pk=batch_id).update_student_count()    
   
   
 '''class GetLanguageOptionView(JSONResponseMixin, View):

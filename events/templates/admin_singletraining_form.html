@@ -16,7 +16,6 @@
 {% endblock %}
 {% block search %} {% endblock %}
 {% block content %}
-{{user}}
         {{form.errors}}
          <div class="bs-callout bs-callout-info">
             {% if instance %}
@@ -42,6 +41,19 @@
                         <div class="col-sm-9">
                             {% render_field form.training_type class+="form-control training_type" tabindex="1" %}
                             {{ form.training_type.errors }}
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label" for= "id_states">States</label>
+                        <div class="col-sm-9">
+                            {% render_field form.states class+="form-control states" tabindex="1" %}
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="col-sm-3 control-label" for= "id_sch">Schools / Organizations</label>
+                        <div class="col-sm-9">
+                            {% render_field form.sch class+="form-control sch" tabindex="1" %}
+                            {{ form.sch.errors }}
                         </div>
                     </div>
                     <div class="form-group">
@@ -110,6 +122,57 @@
                     }
                 }
             });
+        });
+        $('.training_type').change(function() 
+        {
+          if($('.training_type').val() == 0)
+          {
+            alert($('.training_type').val());
+            $school = $('#id_schools');
+            $('.states').change(function() {
+                var state = $(this).val();
+                $.ajax({
+                    url: "/software-training/ajax-state-schools/",
+                    type: "POST",
+                    data: {
+                        state : state
+                    },
+                    success: function(data) {
+                        if(data){
+                            $school.html(data);
+                            $school.removeAttr("disabled");
+                        } else{
+                            $school.attr("disabled", "disabled");
+                            alert('No college found for this state!!');
+                        }
+                    }
+                });
+            });
+          }
+          if($('.training_type').val() == 1)
+          {
+            alert($('.training_type').val());
+            $vocational = $('#id_academic');
+            $('.states').change(function() {
+                var state = $(this).val();
+                $.ajax({
+                    url: "/software-training/ajax-state-vocational/",
+                    type: "POST",
+                    data: {
+                        state : state
+                    },
+                    success: function(data) {
+                        if(data){
+                            $vocational.html(data);
+                            $vocational.removeAttr("disabled");
+                        } else{
+                            $vocational.attr("disabled", "disabled");
+                            alert('No college found for this state!!');
+                        }
+                    }
+                });
+            });
+          }
         });
         $('.foss').change(function() {
             var foss = $(this).val();
